@@ -30,7 +30,7 @@ except ImportError:
 		debug = lambda string: sys.stdout.write(string+"\n")
 
 class ParserException(Exception):
-    "ParserException is thrown whenever there is an error with parsing the vmss file"
+    "ParserException is thrown whenever there is an error with parsing the vmsn file"
     pass
 
 HEADER_SIZE = 12
@@ -86,15 +86,15 @@ class MetaTag():
         return str(self.parent) + self.name
             
 class Group():
-    def __init__(self, vmss, index, offset, name):
+    def __init__(self, vmsn, index, offset, name):
         # fill basic data
-        self.vmss = vmss
+        self.vmsn = vmsn
         self.index = index
         self.offset = offset
         self.name = name
 
         # read additional data from file
-        self.tags_offset = self.vmss.reada_long_long(self.offset + GROUP_NAME_SIZE)
+        self.tags_offset = self.vmsn.reada_long_long(self.offset + GROUP_NAME_SIZE)
 
     def __getitem__(self, tag_ident, *tag_indices):
         debug("searching Tag: {0}{1}".format(tag_ident, tag_indices))
@@ -121,19 +121,19 @@ class Group():
     ##
     def search_tag(self, tag, *indices):
         # seek to the tag offset within the group structure
-        self.vmss.seek(self.tags_offset)
+        self.vmsn.seek(self.tags_offset)
 
         # read first tag info
-        flags = self.vmss.read_byte()
-        name_size = self.vmss.read_byte()
+        flags = self.vmsn.read_byte()
+        name_size = self.vmsn.read_byte()
         while not (flags == 0 and name_size == 0):
             # using the name size to read the tag's name
-            name = self.vmss.read(name_size)
+            name = self.vmsn.read(name_size)
             
             tag_indices_depth = (flags>>6)&0x03
             tag_indices = []
             for _ in range(0, tag_indices_depth):
-                tag_indices.append(self.vmss.read_long())
+                tag_indices.append(self.vmsn.read_long())
             
             data_size = flags&0x3f
             # these are special data sizes that signal a longer data stream...
@@ -141,24 +141,24 @@ class Group():
                 compressed = (data_size == 63)
                 
                 ## read real data sizes (memory and on-disk)
-                data_size = self.vmss.read_offset()
-                data_mem_size = self.vmss.read_offset()
+                data_size = self.vmsn.read_offset()
+                data_mem_size = self.vmsn.read_offset()
                 
                 ## read unknown word. seems to always be 0x0000, perhaps structure padding?
-                unkwnown = self.vmss.read(2)
+                unkwnown = self.vmsn.read(2)
             else:
                 data_mem_size = data_size
                 compressed = False
             
             # get data offset
-            data_offset = self.vmss.tell()
+            data_offset = self.vmsn.tell()
             
             ## if its not the tag we were looking for skip the data
-            self.vmss.seek(data_size, os.SEEK_CUR)
+            self.vmsn.seek(data_size, os.SEEK_CUR)
 
             # read data for the next tag
-            flags = self.vmss.read_byte()
-            name_size = self.vmss.read_byte()
+            flags = self.vmsn.read_byte()
+            name_size = self.vmsn.read_byte()
             
             # check if current tag is suitable by name
             if not name == tag:
@@ -181,7 +181,7 @@ class Group():
         return self.name
         
 class Parser():
-    "Parses vmss/vmsn VMWare produced files and provides an easy access interface"
+    "Parses vmsn/vmss VMWare produced files and provides an easy access interface"
     
     def __init__(self, fh):
         if not "b" in fh.mode.lower():
@@ -206,7 +206,7 @@ class Parser():
             raise ParserException("Header signature invalid", magic)
 
         ## determine offset sizes.
-        # this is used whenever the vmss specifications use 4\8 byte ints dependant of version, so "offset" is a bit misleading.
+        # this is used whenever the vmsn specifications use 4\8 byte ints dependant of version, so "offset" is a bit misleading.
         self.offset_size = 4 if self.version == 0 else 8
             
         ## Read group count
