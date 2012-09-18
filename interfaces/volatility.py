@@ -103,34 +103,6 @@ class VMWareSnapshotFile(addrspace.RunBasedAddressSpace):
         self.dtb = self.parser["cpu"]["CR"][0][3].read_long()
         debug.debug("dtb: {0:x}".format(self.dtb))
 
-    ##
-    ## And now for some accessors for higher level Address Spaces and Users...
-    ##
-    # def read(self, addr, length):
-        # "Read length bytes begining in addr from the relevant region"
-        # for region in self.regions:
-            # if addr in region and (addr+length) in region:
-                # return region.read(addr, length)
-        # raise ValueError("Couldn't find the appropriate region for", addr, length)
-
-    # def get_available_addresses(self):
-        # "return list (actually generator) of (address, size) touples"
-        # for each in self.regions:
-            # yield (each.vaddr, each.size)
-
-    # def is_valid_address(self, addr):
-        # "return True if a given address is within a region"
-        # for region in self.regions:
-            # if addr in region:
-                # return True
-        # return False
-
-    # def write(self, address, buffer):
-        # "write to file, not implemented"
-        # if not self._config.WRITE:
-            # return False
-        # raise NotImplementedError("Write support for this type of Address Space has not been implemented")
-
     def close(self):
         self.parser.close()
         self.base.close()
